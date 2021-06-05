@@ -4,33 +4,27 @@
     "resolveJsonModule": true,
     "experimentalDecorators": true,
     "removeComments": true,
-    "composite": true,
     "downlevelIteration": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "importHelpers": true,
     "module": "commonjs",
-    "incremental": true,
     "strict": true,
     "declaration": true,
-    "skipLibCheck": true,
-    "lib": ["es2019", "es2020.promise", "es2020.bigint", "es2020.string"],
-    "target": "es2019",
-    "sourceMap": true,
-    "moduleResolution": "node",
-    "outDir": "dist",
-    "rootDir": "src",
     "pretty": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "rootDir": "./",
+    "lib": ["es2019", "es2020.promise", "es2020.bigint", "es2020.string"],
+    "target": "es2019",
+    "skipLibCheck": true,
     "plugins": [
       {
         "name": "typescript-eslint-language-service"
       }
     ]
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "__tests__", "dist", "jest.config.ts"],
+  "exclude": ["node_modules"],
   "$schema": "https://json.schemastore.org/tsconfig",
   "display": "GitHub Actions (Node 12)"
 }

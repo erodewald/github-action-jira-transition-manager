@@ -6,10 +6,10 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 'es2020',
     sourceType: 'module',
-    project: ['./tsconfig.json'],
+    project: ['./tsconfig.json', '__tests__/tsconfig.json'],
     tsconfigRootDir: __dirname
   },
-  ignorePatterns: ['.eslintrc.js'],
+  // ignorePatterns: ['.eslintrc.js', 'commitlint.config.js'],
   rules: {
     'no-plusplus': 'off',
     'simple-import-sort/imports': 'error',
@@ -66,6 +66,7 @@ module.exports = {
   env: {
     node: true,
     es6: true,
+    es2021: true,
     'jest/globals': true
   }
 }
