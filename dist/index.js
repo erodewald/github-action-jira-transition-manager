@@ -1,6 +1,489 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 67827:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const tslib_1 = __nccwpck_require__(4351);
+const core = tslib_1.__importStar(__nccwpck_require__(42186));
+const lodash_1 = tslib_1.__importDefault(__nccwpck_require__(90250));
+const TransitionEventManager_1 = tslib_1.__importDefault(__nccwpck_require__(30903));
+class Issue {
+    constructor(issue, jira, argv, context) {
+        var _a, _b;
+        this.transitionNames = [];
+        this.transitionIds = [];
+        this.beforeStatus = null;
+        this.toStatus = null;
+        this.status = null;
+        this.issueObject = null;
+        this.issueTransitions = undefined;
+        this.transitionsLogString = [];
+        this.issue = issue;
+        const pmatch = issue.match(/(?<projectName>[a-zA-Z]{2,})-[0-9]{2,}/);
+        this.projectName = (_b = (_a = pmatch === null || pmatch === void 0 ? void 0 : pmatch.groups) === null || _a === void 0 ? void 0 : _a.projectName.toUpperCase()) !== null && _b !== void 0 ? _b : '';
+        this.jira = jira;
+        this.argv = argv;
+        this.transitionEventManager = new TransitionEventManager_1.default(context, jira, argv);
+    }
+    async build() {
+        var _a;
+        await this.getJiraIssueObject();
+        this.beforeStatus = await this.getStatus();
+        this.toStatus = this.transitionEventManager.githubEventToState(this.projectName);
+        this.issueTransitions = await this.getTransitions();
+        if (this.issueTransitions) {
+            for (const transition of this.issueTransitions) {
+                if (transition.id) {
+                    this.transitionIds.push(transition.id);
+                }
+                if (transition.name) {
+                    this.transitionNames.push(transition.name);
+                }
+                let stateName = 'unknown';
+                if (transition['to'] !== undefined) {
+                    stateName = (_a = transition['to'].name) !== null && _a !== void 0 ? _a : 'unknown';
+                }
+                this.transitionsLogString.push(`{ id: ${transition.id}, name: ${transition.name} } transitions issue to '${stateName}' status.`);
+            }
+        }
+        return this;
+    }
+    requiresTransition() {
+        if (this.status === null)
+            return false;
+        return !this.transitionEventManager.getIgnoredStates(this.projectName).includes(this.status);
+    }
+    transitionToApply() {
+        if (this.toStatus) {
+            const iT = lodash_1.default.find(this.issueTransitions, t => {
+                var _a, _b;
+                if (t.to && ((_a = t.to.name) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === ((_b = this.toStatus) === null || _b === void 0 ? void 0 : _b.toLowerCase())) {
+                    return true;
+                }
+            });
+            return {
+                ...iT,
+                isGlobal: true
+            };
+        }
+        else if (this.status) {
+            return lodash_1.default.find(this.issueTransitions, t => {
+                var _a, _b, _c;
+                if (((_b = (_a = t.name) === null || _a === void 0 ? void 0 : _a.toLowerCase) === null || _b === void 0 ? void 0 : _b.call(_a)) === ((_c = this.status) === null || _c === void 0 ? void 0 : _c.toLowerCase())) {
+                    return true;
+                }
+            });
+        }
+        else {
+            return undefined;
+        }
+    }
+    async transition() {
+        const transitionToApply = this.transitionToApply();
+        if (transitionToApply) {
+            core.info(`${this.issue} will attempt to transition to: ${JSON.stringify(transitionToApply)}`);
+            try {
+                core.info(`Applying transition for ${this.issue}`);
+                await this.jira.transitionIssue(this.issue, transitionToApply);
+                this.status = await this.getStatus(true);
+                core.info(`Changed ${this.issue} status from ${this.beforeStatus} to ${this.status}.`);
+            }
+            catch (error) {
+                core.error(`Transition failed for ${this.issue}`);
+                if (this.argv.failOnError) {
+                    throw error;
+                }
+                else {
+                    core.error(error);
+                }
+            }
+        }
+        else {
+            core.info('Possible transitions:');
+            core.info(this.transitionsLogString.join('\n'));
+        }
+    }
+    async getOutputs() {
+        var _a;
+        return {
+            issue: this.issue,
+            names: this.transitionNames,
+            ids: this.transitionIds,
+            status: (_a = this.status) !== null && _a !== void 0 ? _a : (await this.getStatus(true)),
+            beforestatus: this.beforeStatus
+        };
+    }
+    async getStatus(fresh = false) {
+        if (fresh) {
+            await this.getJiraIssueObject();
+        }
+        return lodash_1.default.get(this.issueObject, 'fields.status.name');
+    }
+    setIssue(issue) {
+        this.issue = issue;
+    }
+    async getTransitions() {
+        const { transitions } = await this.jira.getIssueTransitions(this.issue);
+        if (transitions == null) {
+            core.warning('No transitions found for issue');
+            if (this.argv.failOnError)
+                throw new Error(`Issue ${this.issue} has no available transitions`);
+        }
+        return transitions;
+    }
+    async getJiraIssueObject() {
+        this.issueObject = await this.jira.getIssue(this.issue);
+        return this.issueObject;
+    }
+}
+exports.default = Issue;
+//# sourceMappingURL=Issue.js.map
+
+/***/ }),
+
+/***/ 21665:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const jira_js_1 = __nccwpck_require__(74689);
+class Jira {
+    constructor(conf) {
+        this.baseUrl = conf.baseUrl;
+        this.token = conf.token;
+        this.email = conf.email;
+        this.client = new jira_js_1.Version2Client({
+            host: this.baseUrl,
+            telemetry: false,
+            authentication: {
+                basic: {
+                    email: this.email,
+                    apiToken: this.token
+                }
+            }
+        });
+    }
+    async getIssue(issueId, query) {
+        var _a, _b;
+        const params = {
+            issueIdOrKey: issueId
+        };
+        if (query != null) {
+            params.fields = (_a = query.fields) !== null && _a !== void 0 ? _a : [];
+            params.expand = (_b = query.expand) !== null && _b !== void 0 ? _b : undefined;
+        }
+        return await this.client.issues.getIssue(params);
+    }
+    async getIssueTransitions(issueId) {
+        const params = {
+            issueIdOrKey: issueId
+        };
+        return await this.client.issues.getTransitions(params);
+    }
+    async transitionIssue(issueId, data) {
+        const params = {
+            issueIdOrKey: issueId,
+            transition: data
+        };
+        return await this.client.issues.doTransition(params);
+    }
+}
+exports.default = Jira;
+//# sourceMappingURL=Jira.js.map
+
+/***/ }),
+
+/***/ 30903:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.checkConditions = exports.objEquals = exports.isObject = void 0;
+const tslib_1 = __nccwpck_require__(4351);
+const core = tslib_1.__importStar(__nccwpck_require__(42186));
+const fs = tslib_1.__importStar(__nccwpck_require__(35747));
+const YAML = tslib_1.__importStar(__nccwpck_require__(13552));
+const fs_helper_1 = __nccwpck_require__(37219);
+const isObject = (v) => {
+    return v && typeof v === 'object';
+};
+exports.isObject = isObject;
+function objEquals(v1, v2) {
+    core.debug(`Comparing a:${JSON.stringify(v1)} to b:${JSON.stringify(v2)} (${v1 === v2})`);
+    return v1 === v2;
+}
+exports.objEquals = objEquals;
+function checkConditions(a, b) {
+    for (const k of Object.keys(b)) {
+        if (exports.isObject(a[k]) && exports.isObject(b[k]) ? checkConditions(a[k], b[k]) : objEquals(a[k], b[k])) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    return false;
+}
+exports.checkConditions = checkConditions;
+const yamlConfigPath = '.github/github_event_jira_transitions.';
+class TransitionEventManager {
+    constructor(context, jira, argv) {
+        this.projects = {};
+        this.failOnError = false;
+        this.listenForEvents = [];
+        this.jira = jira;
+        this.context = context;
+        this.failOnError = argv.failOnError;
+        this.ignoredStates = new Map();
+        let yml;
+        if (argv.jiraTransitionsYaml) {
+            yml = argv.jiraTransitionsYaml;
+        }
+        else if (fs_helper_1.fileExistsSync(yamlConfigPath + 'yml')) {
+            yml = fs.readFileSync(yamlConfigPath + 'yml', 'utf8');
+        }
+        else if (fs_helper_1.fileExistsSync(yamlConfigPath + 'yaml')) {
+            yml = fs.readFileSync(yamlConfigPath + 'yaml', 'utf8');
+        }
+        else {
+            throw new Error(`No GitHub event configuration found as an input or as yml file in ${yamlConfigPath}`);
+        }
+        const yObj = YAML.parse(yml);
+        if (!Object.prototype.hasOwnProperty.call(yObj, 'projects')) {
+            const estring = `The YAML config file doesn't have a 'projects' key`;
+            if (this.failOnError) {
+                throw new Error(estring);
+            }
+            else {
+                core.warning(estring);
+                return this;
+            }
+        }
+        this.projects = yObj.projects;
+        Object.entries(this.projects).forEach(([projectName, transitionEvent]) => {
+            const pName = projectName.toUpperCase();
+            core.info(`Project ${pName} configuration loaded`);
+            if (transitionEvent.ignored_states) {
+                this.ignoredStates.set(pName, transitionEvent.ignored_states);
+            }
+        });
+    }
+    getIgnoredStates(currentProject) {
+        var _a;
+        return (_a = this.ignoredStates.get(currentProject.toUpperCase())) !== null && _a !== void 0 ? _a : [];
+    }
+    githubEventToState(currentProjectName) {
+        core.debug(`starting githubEventToState(${currentProjectName})`);
+        core.debug(`Github Context is \n${YAML.stringify(this.context)}`);
+        if (Object.prototype.hasOwnProperty.call(this.projects, currentProjectName)) {
+            core.debug(`looping through Projects to get transition conditions`);
+            const transitionEvent = this.projects[currentProjectName];
+            for (const stateName of Object.keys(transitionEvent.to_state)) {
+                core.debug(`Checking GitHub context against conditions needed to transition to ${stateName}`);
+                for (const ixConditions of Object.values(transitionEvent.to_state[stateName])) {
+                    core.debug(`Checking GitHub payload is compared to: \n${YAML.stringify(ixConditions)}`);
+                    if (checkConditions(this.context, ixConditions)) {
+                        core.debug(`Checking GitHub payload meets the conditions to transition to ${stateName}`);
+                        return stateName;
+                    }
+                }
+            }
+        }
+        else {
+            core.debug(`No project found in config named ${currentProjectName}`);
+        }
+        return '';
+    }
+}
+exports.default = TransitionEventManager;
+//# sourceMappingURL=TransitionEventManager.js.map
+
+/***/ }),
+
+/***/ 39139:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Action = void 0;
+const tslib_1 = __nccwpck_require__(4351);
+const core = tslib_1.__importStar(__nccwpck_require__(42186));
+const Issue_1 = tslib_1.__importDefault(__nccwpck_require__(67827));
+const Jira_1 = tslib_1.__importDefault(__nccwpck_require__(21665));
+const issuesList = [];
+class Action {
+    constructor(githubEvent, argv) {
+        this.jira = new Jira_1.default({
+            baseUrl: argv.config.baseUrl,
+            token: argv.config.token,
+            email: argv.config.email
+        });
+        this.config = argv.config;
+        this.argv = argv;
+        this.githubEvent = githubEvent;
+    }
+    async execute() {
+        const { argv } = this;
+        const issueList = argv.issues.split(',');
+        let successes = 0;
+        let failures = 0;
+        for (const issueId of issueList) {
+            const issue = await new Issue_1.default(issueId.trim(), this.jira, this.argv, this.githubEvent).build();
+            issuesList.push(issue);
+            try {
+                await issue.transition();
+                successes += 1;
+            }
+            catch (error) {
+                failures += 1;
+                if (argv.failOnError) {
+                    core.setFailed(error);
+                }
+                else {
+                    core.error(error);
+                }
+            }
+        }
+        async function getOutputs() {
+            return Promise.all(issuesList.map(async (i) => i.getOutputs()));
+        }
+        core.setOutput('issueOutputs', JSON.stringify(await getOutputs()));
+        return failures === 0 && issueList.length === successes;
+    }
+}
+exports.Action = Action;
+//# sourceMappingURL=action.js.map
+
+/***/ }),
+
+/***/ 37219:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.fileExistsSync = exports.existsSync = exports.directoryExistsSync = void 0;
+const tslib_1 = __nccwpck_require__(4351);
+const fs = tslib_1.__importStar(__nccwpck_require__(35747));
+function directoryExistsSync(path, required) {
+    if (!path) {
+        throw new Error("Arg 'path' must not be empty");
+    }
+    try {
+        const stats = fs.statSync(path);
+        if (stats.isDirectory()) {
+            return true;
+        }
+        else if (!required) {
+            return false;
+        }
+        throw new Error(`Directory '${path}' does not exist`);
+    }
+    catch (error) {
+        if (error.code === 'ENOENT') {
+            if (!required) {
+                return false;
+            }
+            throw new Error(`Directory '${path}' does not exist`);
+        }
+        throw new Error(`Encountered an error when checking whether path '${path}' exists: ${error.message}`);
+    }
+}
+exports.directoryExistsSync = directoryExistsSync;
+function existsSync(path) {
+    if (!path) {
+        throw new Error("Arg 'path' must not be empty");
+    }
+    try {
+        fs.statSync(path);
+    }
+    catch (error) {
+        if (error.code === 'ENOENT') {
+            return false;
+        }
+        throw new Error(`Encountered an error when checking whether path '${path}' exists: ${error.message}`);
+    }
+    return true;
+}
+exports.existsSync = existsSync;
+function fileExistsSync(path) {
+    if (!path) {
+        throw new Error("Arg 'path' must not be empty");
+    }
+    try {
+        const stats = fs.statSync(path);
+        if (!stats.isDirectory()) {
+            return true;
+        }
+        return false;
+    }
+    catch (error) {
+        if (error.code === 'ENOENT') {
+            return false;
+        }
+        throw new Error(`Encountered an error when checking whether path '${path}' exists: ${error.message}`);
+    }
+}
+exports.fileExistsSync = fileExistsSync;
+//# sourceMappingURL=fs-helper.js.map
+
+/***/ }),
+
+/***/ 45480:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getInputs = void 0;
+const tslib_1 = __nccwpck_require__(4351);
+const core = tslib_1.__importStar(__nccwpck_require__(42186));
+const path = tslib_1.__importStar(__nccwpck_require__(85622));
+const fsHelper = tslib_1.__importStar(__nccwpck_require__(37219));
+function getInputs() {
+    var _a, _b, _c, _d, _e, _f;
+    const obj = {};
+    const result = obj;
+    const jiraConfig = obj;
+    jiraConfig.baseUrl = (_b = (_a = process.env.JIRA_BASE_URL) !== null && _a !== void 0 ? _a : core.getInput('jira_base_url')) !== null && _b !== void 0 ? _b : null;
+    if (!jiraConfig.baseUrl) {
+        throw new Error('JIRA_BASE_URL env not defined, or supplied as action input jira_base_url');
+    }
+    jiraConfig.token = (_d = (_c = process.env.JIRA_API_TOKEN) !== null && _c !== void 0 ? _c : core.getInput('jira_api_token')) !== null && _d !== void 0 ? _d : null;
+    if (!jiraConfig.token) {
+        throw new Error('JIRA_API_TOKEN env not defined, or supplied as action input jira_api_token');
+    }
+    jiraConfig.email = (_f = (_e = process.env.JIRA_USER_EMAIL) !== null && _e !== void 0 ? _e : core.getInput('jira_user_email')) !== null && _f !== void 0 ? _f : null;
+    if (!jiraConfig.email) {
+        throw new Error('JIRA_USER_EMAIL env not defined, or supplied as action input jira_user_email');
+    }
+    result.config = jiraConfig;
+    result.issues = core.getInput('issues');
+    result.failOnError = core.getInput('fail-on-error') === 'true';
+    core.debug(`issues = ${result.issues}`);
+    let githubWorkspacePath = process.env.GITHUB_WORKSPACE;
+    if (!githubWorkspacePath) {
+        throw new Error('GITHUB_WORKSPACE not defined');
+    }
+    githubWorkspacePath = path.resolve(githubWorkspacePath);
+    core.debug(`GITHUB_WORKSPACE = '${githubWorkspacePath}'`);
+    fsHelper.directoryExistsSync(githubWorkspacePath, true);
+    result.jiraTransitionsYaml = core.getInput('jira_transitions_yaml');
+    core.debug(`Jira Transitions YAML input: \n${result.jiraTransitionsYaml}`);
+    return result;
+}
+exports.getInputs = getInputs;
+//# sourceMappingURL=input-helper.js.map
+
+/***/ }),
+
 /***/ 87351:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -68432,6 +68915,315 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 
 /***/ }),
 
+/***/ 4351:
+/***/ ((module) => {
+
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+/* global global, define, System, Reflect, Promise */
+var __extends;
+var __assign;
+var __rest;
+var __decorate;
+var __param;
+var __metadata;
+var __awaiter;
+var __generator;
+var __exportStar;
+var __values;
+var __read;
+var __spread;
+var __spreadArrays;
+var __spreadArray;
+var __await;
+var __asyncGenerator;
+var __asyncDelegator;
+var __asyncValues;
+var __makeTemplateObject;
+var __importStar;
+var __importDefault;
+var __classPrivateFieldGet;
+var __classPrivateFieldSet;
+var __createBinding;
+(function (factory) {
+    var root = typeof global === "object" ? global : typeof self === "object" ? self : typeof this === "object" ? this : {};
+    if (typeof define === "function" && define.amd) {
+        define("tslib", ["exports"], function (exports) { factory(createExporter(root, createExporter(exports))); });
+    }
+    else if ( true && typeof module.exports === "object") {
+        factory(createExporter(root, createExporter(module.exports)));
+    }
+    else {
+        factory(createExporter(root));
+    }
+    function createExporter(exports, previous) {
+        if (exports !== root) {
+            if (typeof Object.create === "function") {
+                Object.defineProperty(exports, "__esModule", { value: true });
+            }
+            else {
+                exports.__esModule = true;
+            }
+        }
+        return function (id, v) { return exports[id] = previous ? previous(id, v) : v; };
+    }
+})
+(function (exporter) {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+
+    __extends = function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+
+    __assign = Object.assign || function (t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+        }
+        return t;
+    };
+
+    __rest = function (s, e) {
+        var t = {};
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+            t[p] = s[p];
+        if (s != null && typeof Object.getOwnPropertySymbols === "function")
+            for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+                if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                    t[p[i]] = s[p[i]];
+            }
+        return t;
+    };
+
+    __decorate = function (decorators, target, key, desc) {
+        var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+        if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+        else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+        return c > 3 && r && Object.defineProperty(target, key, r), r;
+    };
+
+    __param = function (paramIndex, decorator) {
+        return function (target, key) { decorator(target, key, paramIndex); }
+    };
+
+    __metadata = function (metadataKey, metadataValue) {
+        if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+    };
+
+    __awaiter = function (thisArg, _arguments, P, generator) {
+        function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+        return new (P || (P = Promise))(function (resolve, reject) {
+            function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+            function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+            function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+            step((generator = generator.apply(thisArg, _arguments || [])).next());
+        });
+    };
+
+    __generator = function (thisArg, body) {
+        var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+        return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+        function verb(n) { return function (v) { return step([n, v]); }; }
+        function step(op) {
+            if (f) throw new TypeError("Generator is already executing.");
+            while (_) try {
+                if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+                if (y = 0, t) op = [op[0] & 2, t.value];
+                switch (op[0]) {
+                    case 0: case 1: t = op; break;
+                    case 4: _.label++; return { value: op[1], done: false };
+                    case 5: _.label++; y = op[1]; op = [0]; continue;
+                    case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                    default:
+                        if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                        if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                        if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                        if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                        if (t[2]) _.ops.pop();
+                        _.trys.pop(); continue;
+                }
+                op = body.call(thisArg, _);
+            } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+            if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+        }
+    };
+
+    __exportStar = function(m, o) {
+        for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(o, p)) __createBinding(o, m, p);
+    };
+
+    __createBinding = Object.create ? (function(o, m, k, k2) {
+        if (k2 === undefined) k2 = k;
+        Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    }) : (function(o, m, k, k2) {
+        if (k2 === undefined) k2 = k;
+        o[k2] = m[k];
+    });
+
+    __values = function (o) {
+        var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+        if (m) return m.call(o);
+        if (o && typeof o.length === "number") return {
+            next: function () {
+                if (o && i >= o.length) o = void 0;
+                return { value: o && o[i++], done: !o };
+            }
+        };
+        throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+    };
+
+    __read = function (o, n) {
+        var m = typeof Symbol === "function" && o[Symbol.iterator];
+        if (!m) return o;
+        var i = m.call(o), r, ar = [], e;
+        try {
+            while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+        }
+        catch (error) { e = { error: error }; }
+        finally {
+            try {
+                if (r && !r.done && (m = i["return"])) m.call(i);
+            }
+            finally { if (e) throw e.error; }
+        }
+        return ar;
+    };
+
+    /** @deprecated */
+    __spread = function () {
+        for (var ar = [], i = 0; i < arguments.length; i++)
+            ar = ar.concat(__read(arguments[i]));
+        return ar;
+    };
+
+    /** @deprecated */
+    __spreadArrays = function () {
+        for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+        for (var r = Array(s), k = 0, i = 0; i < il; i++)
+            for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+                r[k] = a[j];
+        return r;
+    };
+
+    __spreadArray = function (to, from) {
+        for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
+            to[j] = from[i];
+        return to;
+    };
+
+    __await = function (v) {
+        return this instanceof __await ? (this.v = v, this) : new __await(v);
+    };
+
+    __asyncGenerator = function (thisArg, _arguments, generator) {
+        if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+        var g = generator.apply(thisArg, _arguments || []), i, q = [];
+        return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+        function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+        function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+        function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);  }
+        function fulfill(value) { resume("next", value); }
+        function reject(value) { resume("throw", value); }
+        function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+    };
+
+    __asyncDelegator = function (o) {
+        var i, p;
+        return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+        function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; } : f; }
+    };
+
+    __asyncValues = function (o) {
+        if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+        var m = o[Symbol.asyncIterator], i;
+        return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+        function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+        function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+    };
+
+    __makeTemplateObject = function (cooked, raw) {
+        if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
+        return cooked;
+    };
+
+    var __setModuleDefault = Object.create ? (function(o, v) {
+        Object.defineProperty(o, "default", { enumerable: true, value: v });
+    }) : function(o, v) {
+        o["default"] = v;
+    };
+
+    __importStar = function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+
+    __importDefault = function (mod) {
+        return (mod && mod.__esModule) ? mod : { "default": mod };
+    };
+
+    __classPrivateFieldGet = function (receiver, state, kind, f) {
+        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+    };
+
+    __classPrivateFieldSet = function (receiver, state, value, kind, f) {
+        if (kind === "m") throw new TypeError("Private method is not writable");
+        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+        return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+    };
+
+    exporter("__extends", __extends);
+    exporter("__assign", __assign);
+    exporter("__rest", __rest);
+    exporter("__decorate", __decorate);
+    exporter("__param", __param);
+    exporter("__metadata", __metadata);
+    exporter("__awaiter", __awaiter);
+    exporter("__generator", __generator);
+    exporter("__exportStar", __exportStar);
+    exporter("__createBinding", __createBinding);
+    exporter("__values", __values);
+    exporter("__read", __read);
+    exporter("__spread", __spread);
+    exporter("__spreadArrays", __spreadArrays);
+    exporter("__spreadArray", __spreadArray);
+    exporter("__await", __await);
+    exporter("__asyncGenerator", __asyncGenerator);
+    exporter("__asyncDelegator", __asyncDelegator);
+    exporter("__asyncValues", __asyncValues);
+    exporter("__makeTemplateObject", __makeTemplateObject);
+    exporter("__importStar", __importStar);
+    exporter("__importDefault", __importDefault);
+    exporter("__classPrivateFieldGet", __classPrivateFieldGet);
+    exporter("__classPrivateFieldSet", __classPrivateFieldSet);
+});
+
+
+/***/ }),
+
 /***/ 34207:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -76722,46 +77514,6 @@ module.exports = require("zlib");;
 /******/ 	}
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/compat get default export */
-/******/ 	(() => {
-/******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__nccwpck_require__.n = (module) => {
-/******/ 			var getter = module && module.__esModule ?
-/******/ 				() => (module['default']) :
-/******/ 				() => (module);
-/******/ 			__nccwpck_require__.d(getter, { a: getter });
-/******/ 			return getter;
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__nccwpck_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
-/******/ 			}
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	(() => {
-/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	(() => {
-/******/ 		// define __esModule on exports
-/******/ 		__nccwpck_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/node module decorator */
 /******/ 	(() => {
 /******/ 		__nccwpck_require__.nmd = (module) => {
@@ -76778,451 +77530,23 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be in strict mode.
 (() => {
 "use strict";
-// ESM COMPAT FLAG
-__nccwpck_require__.r(__webpack_exports__);
+var exports = __webpack_exports__;
 
-// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
-var core = __nccwpck_require__(42186);
-// EXTERNAL MODULE: external "fs"
-var external_fs_ = __nccwpck_require__(35747);
-// EXTERNAL MODULE: ./node_modules/lodash/lodash.js
-var lodash = __nccwpck_require__(90250);
-var lodash_default = /*#__PURE__*/__nccwpck_require__.n(lodash);
-// EXTERNAL MODULE: ./node_modules/yaml/index.js
-var yaml = __nccwpck_require__(13552);
-;// CONCATENATED MODULE: ./src/fs-helper.ts
-
-function directoryExistsSync(path, required) {
-    if (!path) {
-        throw new Error("Arg 'path' must not be empty");
-    }
-    try {
-        const stats = external_fs_.statSync(path);
-        if (stats.isDirectory()) {
-            return true;
-        }
-        else if (!required) {
-            return false;
-        }
-        throw new Error(`Directory '${path}' does not exist`);
-    }
-    catch (error) {
-        if (error.code === 'ENOENT') {
-            if (!required) {
-                return false;
-            }
-            throw new Error(`Directory '${path}' does not exist`);
-        }
-        throw new Error(`Encountered an error when checking whether path '${path}' exists: ${error.message}`);
-    }
-}
-function existsSync(path) {
-    if (!path) {
-        throw new Error("Arg 'path' must not be empty");
-    }
-    try {
-        fs.statSync(path);
-    }
-    catch (error) {
-        if (error.code === 'ENOENT') {
-            return false;
-        }
-        throw new Error(`Encountered an error when checking whether path '${path}' exists: ${error.message}`);
-    }
-    return true;
-}
-function fileExistsSync(path) {
-    if (!path) {
-        throw new Error("Arg 'path' must not be empty");
-    }
-    try {
-        const stats = external_fs_.statSync(path);
-        if (!stats.isDirectory()) {
-            return true;
-        }
-        return false;
-    }
-    catch (error) {
-        if (error.code === 'ENOENT') {
-            return false;
-        }
-        throw new Error(`Encountered an error when checking whether path '${path}' exists: ${error.message}`);
-    }
-}
-
-;// CONCATENATED MODULE: ./src/TransitionEventManager.ts
-
-
-
-
-const isObject = (v) => {
-    return v && typeof v === 'object';
-};
-function objEquals(v1, v2) {
-    core.debug(`Comparing a:${JSON.stringify(v1)} to b:${JSON.stringify(v2)} (${v1 === v2})`);
-    return v1 === v2;
-}
-function checkConditions(a, b) {
-    for (const k of Object.keys(b)) {
-        if (isObject(a[k]) && isObject(b[k]) ? checkConditions(a[k], b[k]) : objEquals(a[k], b[k])) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-    return false;
-}
-const yamlConfigPath = '.github/github_event_jira_transitions.';
-class TransitionEventManager {
-    constructor(context, jira, argv) {
-        this.projects = {};
-        this.failOnError = false;
-        this.listenForEvents = [];
-        this.jira = jira;
-        this.context = context;
-        this.failOnError = argv.failOnError;
-        this.ignoredStates = new Map();
-        let yml;
-        if (argv.jiraTransitionsYaml) {
-            yml = argv.jiraTransitionsYaml;
-        }
-        else if (fileExistsSync(yamlConfigPath + 'yml')) {
-            yml = external_fs_.readFileSync(yamlConfigPath + 'yml', 'utf8');
-        }
-        else if (fileExistsSync(yamlConfigPath + 'yaml')) {
-            yml = external_fs_.readFileSync(yamlConfigPath + 'yaml', 'utf8');
-        }
-        else {
-            throw new Error(`No GitHub event configuration found as an input or as yml file in ${yamlConfigPath}`);
-        }
-        const yObj = yaml.parse(yml);
-        if (!Object.prototype.hasOwnProperty.call(yObj, 'projects')) {
-            const estring = `The YAML config file doesn't have a 'projects' key`;
-            if (this.failOnError) {
-                throw new Error(estring);
-            }
-            else {
-                core.warning(estring);
-                return this;
-            }
-        }
-        this.projects = yObj.projects;
-        Object.entries(this.projects).forEach(([projectName, transitionEvent]) => {
-            const pName = projectName.toUpperCase();
-            core.info(`Project ${pName} configuration loaded`);
-            if (transitionEvent.ignored_states) {
-                this.ignoredStates.set(pName, transitionEvent.ignored_states);
-            }
-        });
-    }
-    getIgnoredStates(currentProject) {
-        var _a;
-        return (_a = this.ignoredStates.get(currentProject.toUpperCase())) !== null && _a !== void 0 ? _a : [];
-    }
-    githubEventToState(currentProjectName) {
-        core.debug(`starting githubEventToState(${currentProjectName})`);
-        core.debug(`Github Context is \n${yaml.stringify(this.context)}`);
-        if (Object.prototype.hasOwnProperty.call(this.projects, currentProjectName)) {
-            core.debug(`looping through Projects to get transition conditions`);
-            const transitionEvent = this.projects[currentProjectName];
-            for (const stateName of Object.keys(transitionEvent.to_state)) {
-                core.debug(`Checking GitHub context against conditions needed to transition to ${stateName}`);
-                for (const ixConditions of Object.values(transitionEvent.to_state[stateName])) {
-                    core.debug(`Checking GitHub payload is compared to: \n${yaml.stringify(ixConditions)}`);
-                    if (checkConditions(this.context, ixConditions)) {
-                        core.debug(`Checking GitHub payload meets the conditions to transition to ${stateName}`);
-                        return stateName;
-                    }
-                }
-            }
-        }
-        else {
-            core.debug(`No project found in config named ${currentProjectName}`);
-        }
-        return '';
-    }
-}
-
-;// CONCATENATED MODULE: ./src/Issue.ts
-
-
-
-class Issue {
-    constructor(issue, jira, argv, context) {
-        var _a, _b;
-        this.transitionNames = [];
-        this.transitionIds = [];
-        this.beforeStatus = null;
-        this.toStatus = null;
-        this.status = null;
-        this.issueObject = null;
-        this.issueTransitions = undefined;
-        this.transitionsLogString = [];
-        this.issue = issue;
-        const pmatch = issue.match(/(?<projectName>[a-zA-Z]{2,})-[0-9]{2,}/);
-        this.projectName = (_b = (_a = pmatch === null || pmatch === void 0 ? void 0 : pmatch.groups) === null || _a === void 0 ? void 0 : _a.projectName.toUpperCase()) !== null && _b !== void 0 ? _b : '';
-        this.jira = jira;
-        this.argv = argv;
-        this.transitionEventManager = new TransitionEventManager(context, jira, argv);
-    }
-    async build() {
-        var _a;
-        await this.getJiraIssueObject();
-        this.beforeStatus = await this.getStatus();
-        this.toStatus = this.transitionEventManager.githubEventToState(this.projectName);
-        this.issueTransitions = await this.getTransitions();
-        if (this.issueTransitions) {
-            for (const transition of this.issueTransitions) {
-                if (transition.id) {
-                    this.transitionIds.push(transition.id);
-                }
-                if (transition.name) {
-                    this.transitionNames.push(transition.name);
-                }
-                let stateName = 'unknown';
-                if (transition['to'] !== undefined) {
-                    stateName = (_a = transition['to'].name) !== null && _a !== void 0 ? _a : 'unknown';
-                }
-                this.transitionsLogString.push(`{ id: ${transition.id}, name: ${transition.name} } transitions issue to '${stateName}' status.`);
-            }
-        }
-        return this;
-    }
-    requiresTransition() {
-        if (this.status === null)
-            return false;
-        return !this.transitionEventManager.getIgnoredStates(this.projectName).includes(this.status);
-    }
-    transitionToApply() {
-        if (this.toStatus) {
-            const iT = lodash_default().find(this.issueTransitions, t => {
-                var _a, _b;
-                if (t.to && ((_a = t.to.name) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === ((_b = this.toStatus) === null || _b === void 0 ? void 0 : _b.toLowerCase())) {
-                    return true;
-                }
-            });
-            return {
-                ...iT,
-                isGlobal: true
-            };
-        }
-        else if (this.status) {
-            return lodash_default().find(this.issueTransitions, t => {
-                var _a, _b, _c;
-                if (((_b = (_a = t.name) === null || _a === void 0 ? void 0 : _a.toLowerCase) === null || _b === void 0 ? void 0 : _b.call(_a)) === ((_c = this.status) === null || _c === void 0 ? void 0 : _c.toLowerCase())) {
-                    return true;
-                }
-            });
-        }
-        else {
-            return undefined;
-        }
-    }
-    async transition() {
-        const transitionToApply = this.transitionToApply();
-        if (transitionToApply) {
-            core.info(`${this.issue} will attempt to transition to: ${JSON.stringify(transitionToApply)}`);
-            try {
-                core.info(`Applying transition for ${this.issue}`);
-                await this.jira.transitionIssue(this.issue, transitionToApply);
-                this.status = await this.getStatus(true);
-                core.info(`Changed ${this.issue} status from ${this.beforeStatus} to ${this.status}.`);
-            }
-            catch (error) {
-                core.error(`Transition failed for ${this.issue}`);
-                if (this.argv.failOnError) {
-                    throw error;
-                }
-                else {
-                    core.error(error);
-                }
-            }
-        }
-        else {
-            core.info('Possible transitions:');
-            core.info(this.transitionsLogString.join('\n'));
-        }
-    }
-    async getOutputs() {
-        var _a;
-        return {
-            issue: this.issue,
-            names: this.transitionNames,
-            ids: this.transitionIds,
-            status: (_a = this.status) !== null && _a !== void 0 ? _a : (await this.getStatus(true)),
-            beforestatus: this.beforeStatus
-        };
-    }
-    async getStatus(fresh = false) {
-        if (fresh) {
-            await this.getJiraIssueObject();
-        }
-        return lodash_default().get(this.issueObject, 'fields.status.name');
-    }
-    setIssue(issue) {
-        this.issue = issue;
-    }
-    async getTransitions() {
-        const { transitions } = await this.jira.getIssueTransitions(this.issue);
-        if (transitions == null) {
-            core.warning('No transitions found for issue');
-            if (this.argv.failOnError)
-                throw new Error(`Issue ${this.issue} has no available transitions`);
-        }
-        return transitions;
-    }
-    async getJiraIssueObject() {
-        this.issueObject = await this.jira.getIssue(this.issue);
-        return this.issueObject;
-    }
-}
-
-// EXTERNAL MODULE: ./node_modules/jira.js/out/index.js
-var out = __nccwpck_require__(74689);
-;// CONCATENATED MODULE: ./src/Jira.ts
-
-class Jira {
-    constructor(conf) {
-        this.baseUrl = conf.baseUrl;
-        this.token = conf.token;
-        this.email = conf.email;
-        this.client = new out.Version2Client({
-            host: this.baseUrl,
-            telemetry: false,
-            authentication: {
-                basic: {
-                    email: this.email,
-                    apiToken: this.token
-                }
-            }
-        });
-    }
-    async getIssue(issueId, query) {
-        var _a, _b;
-        const params = {
-            issueIdOrKey: issueId
-        };
-        if (query != null) {
-            params.fields = (_a = query.fields) !== null && _a !== void 0 ? _a : [];
-            params.expand = (_b = query.expand) !== null && _b !== void 0 ? _b : undefined;
-        }
-        return await this.client.issues.getIssue(params);
-    }
-    async getIssueTransitions(issueId) {
-        const params = {
-            issueIdOrKey: issueId
-        };
-        return await this.client.issues.getTransitions(params);
-    }
-    async transitionIssue(issueId, data) {
-        const params = {
-            issueIdOrKey: issueId,
-            transition: data
-        };
-        return await this.client.issues.doTransition(params);
-    }
-}
-
-;// CONCATENATED MODULE: ./src/action.ts
-
-
-
-const issuesList = [];
-class Action {
-    constructor(githubEvent, argv) {
-        this.jira = new Jira({
-            baseUrl: argv.config.baseUrl,
-            token: argv.config.token,
-            email: argv.config.email
-        });
-        this.config = argv.config;
-        this.argv = argv;
-        this.githubEvent = githubEvent;
-    }
-    async execute() {
-        const { argv } = this;
-        const issueList = argv.issues.split(',');
-        let successes = 0;
-        let failures = 0;
-        for (const issueId of issueList) {
-            const issue = await new Issue(issueId.trim(), this.jira, this.argv, this.githubEvent).build();
-            issuesList.push(issue);
-            try {
-                await issue.transition();
-                successes += 1;
-            }
-            catch (error) {
-                failures += 1;
-                if (argv.failOnError) {
-                    core.setFailed(error);
-                }
-                else {
-                    core.error(error);
-                }
-            }
-        }
-        async function getOutputs() {
-            return Promise.all(issuesList.map(async (i) => i.getOutputs()));
-        }
-        core.setOutput('issueOutputs', JSON.stringify(await getOutputs()));
-        return failures === 0 && issueList.length === successes;
-    }
-}
-
-// EXTERNAL MODULE: external "path"
-var external_path_ = __nccwpck_require__(85622);
-;// CONCATENATED MODULE: ./src/input-helper.ts
-
-
-
-function getInputs() {
-    var _a, _b, _c, _d, _e, _f;
-    const obj = {};
-    const result = obj;
-    const jiraConfig = obj;
-    jiraConfig.baseUrl = (_b = (_a = process.env.JIRA_BASE_URL) !== null && _a !== void 0 ? _a : core.getInput('jira_base_url')) !== null && _b !== void 0 ? _b : null;
-    if (!jiraConfig.baseUrl) {
-        throw new Error('JIRA_BASE_URL env not defined, or supplied as action input jira_base_url');
-    }
-    jiraConfig.token = (_d = (_c = process.env.JIRA_API_TOKEN) !== null && _c !== void 0 ? _c : core.getInput('jira_api_token')) !== null && _d !== void 0 ? _d : null;
-    if (!jiraConfig.token) {
-        throw new Error('JIRA_API_TOKEN env not defined, or supplied as action input jira_api_token');
-    }
-    jiraConfig.email = (_f = (_e = process.env.JIRA_USER_EMAIL) !== null && _e !== void 0 ? _e : core.getInput('jira_user_email')) !== null && _f !== void 0 ? _f : null;
-    if (!jiraConfig.email) {
-        throw new Error('JIRA_USER_EMAIL env not defined, or supplied as action input jira_user_email');
-    }
-    result.config = jiraConfig;
-    result.issues = core.getInput('issues');
-    result.failOnError = core.getInput('fail-on-error') === 'true';
-    core.debug(`issues = ${result.issues}`);
-    let githubWorkspacePath = process.env.GITHUB_WORKSPACE;
-    if (!githubWorkspacePath) {
-        throw new Error('GITHUB_WORKSPACE not defined');
-    }
-    githubWorkspacePath = external_path_.resolve(githubWorkspacePath);
-    core.debug(`GITHUB_WORKSPACE = '${githubWorkspacePath}'`);
-    directoryExistsSync(githubWorkspacePath, true);
-    result.jiraTransitionsYaml = core.getInput('jira_transitions_yaml');
-    core.debug(`Jira Transitions YAML input: \n${result.jiraTransitionsYaml}`);
-    return result;
-}
-
-;// CONCATENATED MODULE: ./src/index.ts
-
-
-
-
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const tslib_1 = __nccwpck_require__(4351);
+const core = tslib_1.__importStar(__nccwpck_require__(42186));
+const fs = tslib_1.__importStar(__nccwpck_require__(35747));
+const action_1 = __nccwpck_require__(39139);
+const input_helper_1 = __nccwpck_require__(45480);
 const githubEventPath = process.env.GITHUB_EVENT_PATH;
-const githubEvent = JSON.parse(external_fs_.readFileSync(githubEventPath, 'utf8'));
+const githubEvent = JSON.parse(fs.readFileSync(githubEventPath, 'utf8'));
 async function exec() {
-    await new Action(githubEvent, getInputs()).execute();
+    await new action_1.Action(githubEvent, input_helper_1.getInputs()).execute();
 }
 exec().catch(error => {
     core.setFailed(error);
 });
-
+//# sourceMappingURL=index.js.map
 })();
 
 module.exports = __webpack_exports__;

@@ -18,11 +18,14 @@
     "target": "es2019",
     "sourceMap": true,
     "moduleResolution": "node",
-    "outDir": "dist",
+    "outDir": "lib",
     "rootDir": "src",
     "pretty": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "typeRoots": ["node_modules/@types/"],
+    // Ensure that Babel can safely transpile files in the TypeScript project
+    "isolatedModules": true,
     "plugins": [
       {
         "name": "typescript-eslint-language-service"
@@ -30,7 +33,7 @@
     ]
   },
   "include": ["src"],
-  "exclude": ["node_modules", "__tests__", "dist", "jest.config.ts"],
+  "exclude": ["node_modules", "__tests__", "dist", "lib", "jest.config.ts"],
   "$schema": "https://json.schemastore.org/tsconfig",
   "display": "GitHub Actions (Node 12)"
 }
