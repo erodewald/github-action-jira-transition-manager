@@ -14,7 +14,7 @@ This action will transition the list of Jira issues provided between states, or 
 <!-- start usage -->
 
 ```yaml
-- uses: bitflight-devops/github-action-transition-jira-ticket@v1.0.1
+- uses: bitflight-devops/github-action-transition-jira-ticket@v1.0.2
   with:
     # A comma delimited list of one or more Jira issues to be transitioned
     issues: ''
@@ -35,7 +35,7 @@ This action will transition the list of Jira issues provided between states, or 
 
     # If there is an error during transition, the action will error out.
     # Default: false
-    fail-on-error: ''
+    fail_on_error: ''
 ```
 
 <!-- end usage -->
@@ -51,7 +51,7 @@ This action will transition the list of Jira issues provided between states, or 
 | **`jira_base_url`**         | The Jira cloud base url including protocol i.e. 'https://company.atlassian.net' or use environment variable JIRA_BASE_URL |             |  **false**   |
 | **`jira_user_email`**       | The Jira cloud user email address or use environment variable JIRA_USER_EMAIL                                             |             |  **false**   |
 | **`jira_api_token`**        | The Jira cloud user api token or use environment variable JIRA_API_TOKEN                                                  |             |  **false**   |
-| **`fail-on-error`**         | If there is an error during transition, the action will error out.                                                        |             |  **false**   |
+| **`fail_on_error`**         | If there is an error during transition, the action will error out.                                                        |             |  **false**   |
 
 <!-- end inputs -->
 
