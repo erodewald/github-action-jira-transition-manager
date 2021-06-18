@@ -1,10 +1,10 @@
 /* eslint-disable security/detect-unsafe-regex */
 import * as core from '@actions/core'
-import {Context} from '@actions/github/lib/context'
-import {IssueBean, IssueTransition} from 'jira.js/out/version3/models'
+import { Context } from '@actions/github/lib/context'
+import { IssueBean, IssueTransition } from 'jira.js/out/version3/models'
 import _ from 'lodash'
 
-import {Args} from './@types'
+import { Args } from './@types'
 import Jira from './Jira'
 import TransitionEventManager from './TransitionEventManager'
 
@@ -96,7 +96,7 @@ export default class Issue {
   async transition(): Promise<void> {
     const transitionToApply = this.transitionToApply()
 
-    if (transitionToApply) {
+    if (transitionToApply?.name) {
       core.info(`${this.issue} will attempt to transition to: ${JSON.stringify(transitionToApply)}`)
 
       try {
@@ -123,7 +123,7 @@ export default class Issue {
       issue: this.issue,
       names: this.transitionNames,
       ids: this.transitionIds,
-      status: this.status ?? (await this.getStatus(true)),
+      status: this.status || (await this.getStatus(true)),
       beforestatus: this.beforeStatus as string
     }
   }
@@ -139,7 +139,7 @@ export default class Issue {
   }
 
   async getTransitions(): Promise<IssueTransition[] | undefined> {
-    const {transitions} = await this.jira.getIssueTransitions(this.issue)
+    const { transitions } = await this.jira.getIssueTransitions(this.issue)
 
     if (transitions == null) {
       core.warning('No transitions found for issue')

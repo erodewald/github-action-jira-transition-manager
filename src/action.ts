@@ -1,8 +1,8 @@
 import * as core from '@actions/core'
-import {Context} from '@actions/github/lib/context'
+import { Context } from '@actions/github/lib/context'
 
-import {Args, JiraConfig} from './@types/'
-import Issue, {IssueOutput, Issues} from './Issue'
+import { Args, JiraConfig } from './@types/'
+import Issue, { IssueOutput, Issues } from './Issue'
 import Jira from './Jira'
 
 const issuesList: Issues = []
@@ -24,7 +24,7 @@ export class Action {
   }
 
   async execute(): Promise<boolean> {
-    const {argv} = this
+    const { argv } = this
     const issueList = argv.issues.split(',')
     let successes = 0
     let failures = 0
@@ -46,7 +46,7 @@ export class Action {
     }
 
     async function getOutputs(): Promise<IssueOutput[]> {
-      return Promise.all(issuesList.map(async i => i.getOutputs()))
+      return Promise.all(issuesList.map(async i => await i.getOutputs()))
     }
     core.setOutput('issueOutputs', JSON.stringify(await getOutputs()))
 

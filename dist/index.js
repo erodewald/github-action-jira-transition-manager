@@ -84,7 +84,7 @@ class Issue {
     }
     async transition() {
         const transitionToApply = this.transitionToApply();
-        if (transitionToApply) {
+        if (transitionToApply === null || transitionToApply === void 0 ? void 0 : transitionToApply.name) {
             core.info(`${this.issue} will attempt to transition to: ${JSON.stringify(transitionToApply)}`);
             try {
                 core.info(`Applying transition for ${this.issue}`);
@@ -108,12 +108,11 @@ class Issue {
         }
     }
     async getOutputs() {
-        var _a;
         return {
             issue: this.issue,
             names: this.transitionNames,
             ids: this.transitionIds,
-            status: (_a = this.status) !== null && _a !== void 0 ? _a : (await this.getStatus(true)),
+            status: this.status || (await this.getStatus(true)),
             beforestatus: this.beforeStatus
         };
     }
@@ -352,7 +351,7 @@ class Action {
             }
         }
         async function getOutputs() {
-            return Promise.all(issuesList.map(async (i) => i.getOutputs()));
+            return Promise.all(issuesList.map(async (i) => await i.getOutputs()));
         }
         core.setOutput('issueOutputs', JSON.stringify(await getOutputs()));
         return failures === 0 && issueList.length === successes;

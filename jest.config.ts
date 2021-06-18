@@ -1,5 +1,5 @@
 // jest.config.ts
-import type {Config} from '@jest/types'
+import type { Config } from '@jest/types'
 
 // Sync object
 const config: Config.InitialOptions = {
@@ -13,7 +13,7 @@ const config: Config.InitialOptions = {
   },
   setupFiles: ['dotenv/config'],
   reporters: ['default', 'jest-junit'],
-
+  testTimeout: 50000,
   verbose: true
 }
 export default config

@@ -64,7 +64,7 @@ const originalContext = { ...github.context }
 
 describe('jira ticket transition', () => {
   beforeAll(() => {
-    jest.setTimeout(50000)
+
     // Mock getInput
     jest.spyOn(core, 'getInput').mockImplementation((name: string) => {
       // eslint-disable-next-line security/detect-object-injection
@@ -116,6 +116,7 @@ describe('jira ticket transition', () => {
   })
 
   it('sets defaults', () => {
+    jest.setTimeout(50000)
     const settings: Args = inputHelper.getInputs()
     expect(settings).toBeTruthy()
     expect(settings.issues).toEqual(issues)
@@ -124,6 +125,7 @@ describe('jira ticket transition', () => {
   })
 
   it('get transitions', async () => {
+    jest.setTimeout(50000)
     // expect.hasAssertions()
     github.context.eventName = 'push'
     const settings: Args = inputHelper.getInputs()
@@ -133,6 +135,7 @@ describe('jira ticket transition', () => {
   })
 
   it('GitHub Event: start_test', async () => {
+    jest.setTimeout(50000)
     // expect.hasAssertions()
     github.context.eventName = 'start_test'
     const settings: Args = inputHelper.getInputs()
@@ -142,6 +145,7 @@ describe('jira ticket transition', () => {
   })
 
   it('GitHub Event: create', async () => {
+    jest.setTimeout(50000)
     // expect.hasAssertions()
     github.context.eventName = 'create'
     const settings: Args = inputHelper.getInputs()
@@ -151,6 +155,7 @@ describe('jira ticket transition', () => {
   })
 
   it('GitHub Event: pull_request, Github Action: opened', async () => {
+    jest.setTimeout(50000)
     // expect.hasAssertions()
     github.context.eventName = 'pull_request'
     github.context.action = 'opened'
@@ -160,6 +165,7 @@ describe('jira ticket transition', () => {
     expect(result).toEqual(true)
   })
   it('GitHub Event: pull_request, Github Action: synchronized', async () => {
+    jest.setTimeout(50000)
     // expect.hasAssertions()
     github.context.eventName = 'pull_request'
     github.context.action = 'synchronized'
@@ -169,6 +175,7 @@ describe('jira ticket transition', () => {
     expect(result).toEqual(true)
   })
   it('GitHub Event: pull_request, Github Action: closed, GitHub Payload: merged', async () => {
+    jest.setTimeout(50000)
     // expect.hasAssertions()
     github.context.eventName = 'pull_request'
     github.context.action = 'closed'
@@ -179,6 +186,7 @@ describe('jira ticket transition', () => {
     expect(result).toEqual(true)
   })
   it('GitHub Event: pull_request_review, Github State: APPROVED', async () => {
+    jest.setTimeout(50000)
     // expect.hasAssertions()
     github.context.eventName = 'pull_request_review'
     github.context.payload.state = 'APPROVED'
