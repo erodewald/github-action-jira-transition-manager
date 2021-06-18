@@ -2,8 +2,8 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import * as path from 'path'
 
-import { Args } from '../src/@types'
-import { Action } from '../src/action'
+import {Args} from '../src/@types'
+import {Action} from '../src/action'
 import * as fsHelper from '../src/fs-helper'
 import * as inputHelper from '../src/input-helper'
 
@@ -60,11 +60,10 @@ export const baseUrl = process.env.JIRA_BASE_URL as string
 // Inputs for mock @actions/core
 let inputs = {} as any
 // Shallow clone original @actions/github context
-const originalContext = { ...github.context }
+const originalContext = {...github.context}
 
 describe('jira ticket transition', () => {
   beforeAll(() => {
-
     // Mock getInput
     jest.spyOn(core, 'getInput').mockImplementation((name: string) => {
       // eslint-disable-next-line security/detect-object-injection

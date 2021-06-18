@@ -26,14 +26,14 @@ module.exports = {
     'security/detect-non-literal-fs-filename': 'off',
     '@typescript-eslint/strict-boolean-expressions': 'off',
     '@typescript-eslint/no-unused-vars': 'error',
-    '@typescript-eslint/explicit-member-accessibility': ['error', { accessibility: 'no-public' }],
+    '@typescript-eslint/explicit-member-accessibility': ['error', {accessibility: 'no-public'}],
     '@typescript-eslint/no-require-imports': 'error',
     '@typescript-eslint/array-type': 'error',
     '@typescript-eslint/await-thenable': 'error',
     '@typescript-eslint/ban-ts-comment': 'error',
     camelcase: 'off',
 
-    '@typescript-eslint/explicit-function-return-type': ['error', { allowExpressions: true }],
+    '@typescript-eslint/explicit-function-return-type': ['error', {allowExpressions: true}],
     '@typescript-eslint/func-call-spacing': ['error', 'never'],
 
     '@typescript-eslint/no-array-constructor': 'error',

@@ -1,12 +1,12 @@
 import * as core from '@actions/core'
 import * as path from 'path'
 
-import { Args, JiraAuthConfig } from './@types'
+import {Args, JiraAuthConfig} from './@types'
 import * as fsHelper from './fs-helper'
 
 export function getInputs(): Args {
-  const result = ({} as unknown) as Args
-  const jiraConfig = ({} as unknown) as JiraAuthConfig
+  const result = {} as unknown as Args
+  const jiraConfig = {} as unknown as JiraAuthConfig
 
   jiraConfig.baseUrl = process.env.JIRA_BASE_URL ?? core.getInput('jira_base_url') ?? null
   if (!jiraConfig.baseUrl) {
