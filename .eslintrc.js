@@ -1,12 +1,12 @@
 module.exports = {
   root: true,
   plugins: ['simple-import-sort', 'import', 'jest', '@typescript-eslint', 'security', 'github'],
-  extends: ['eslint:recommended', 'plugin:security/recommended', 'plugin:prettier/recommended', 'prettier'],
+  extends: ['eslint:recommended', 'plugin:security/recommended'],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 'es2020',
     sourceType: 'module',
-    project: ['./tsconfig.json', '__tests__/tsconfig.json'],
+    project: ['./tsconfig.json', './__tests__/tsconfig.json'],
     tsconfigRootDir: __dirname
   },
   // ignorePatterns: ['.eslintrc.js', 'commitlint.config.js'],
@@ -26,14 +26,14 @@ module.exports = {
     'security/detect-non-literal-fs-filename': 'off',
     '@typescript-eslint/strict-boolean-expressions': 'off',
     '@typescript-eslint/no-unused-vars': 'error',
-    '@typescript-eslint/explicit-member-accessibility': ['error', {accessibility: 'no-public'}],
+    '@typescript-eslint/explicit-member-accessibility': ['error', { accessibility: 'no-public' }],
     '@typescript-eslint/no-require-imports': 'error',
     '@typescript-eslint/array-type': 'error',
     '@typescript-eslint/await-thenable': 'error',
     '@typescript-eslint/ban-ts-comment': 'error',
     camelcase: 'off',
 
-    '@typescript-eslint/explicit-function-return-type': ['error', {allowExpressions: true}],
+    '@typescript-eslint/explicit-function-return-type': ['error', { allowExpressions: true }],
     '@typescript-eslint/func-call-spacing': ['error', 'never'],
 
     '@typescript-eslint/no-array-constructor': 'error',
@@ -60,8 +60,7 @@ module.exports = {
     '@typescript-eslint/semi': 'off',
     '@typescript-eslint/type-annotation-spacing': 'error',
     '@typescript-eslint/unbound-method': 'error',
-    'space-before-function-paren': 'off',
-    'prettier/prettier': 'error'
+    'space-before-function-paren': 'off'
   },
   env: {
     node: true,

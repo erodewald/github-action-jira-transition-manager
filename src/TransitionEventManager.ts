@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/prefer-for-of */
 /* eslint-disable security/detect-object-injection */
 import * as core from '@actions/core'
-import {Context} from '@actions/github/lib/context'
+import { Context } from '@actions/github/lib/context'
 import * as fs from 'fs'
 import * as YAML from 'yaml'
 
-import {Args} from './@types'
-import {fileExistsSync} from './fs-helper'
+import { Args } from './@types'
+import { fileExistsSync } from './fs-helper'
 import Jira from './Jira'
 
 export const isObject = (v: any): boolean => {

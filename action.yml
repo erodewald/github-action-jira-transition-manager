@@ -27,7 +27,7 @@ inputs:
       The Jira cloud user api token
       or use environment variable JIRA_API_TOKEN
     required: false
-  fail-on-error:
+  fail_on_error:
     description: If there is an error during transition, the action will error out.
     default: false
     required: false
