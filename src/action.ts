@@ -30,6 +30,7 @@ export class Action {
     let failures = 0
 
     for (const issueId of issueList) {
+      core.debug(`Processing issue ${issueId}`)
       const issue = await new Issue(issueId.trim(), this.jira, this.argv, this.githubEvent).build()
       issuesList.push(issue)
       try {

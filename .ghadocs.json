@@ -10,8 +10,8 @@
     "prefix": "v",
     "branch": "main"
   },
-  "owner": "bitflight-devops",
-  "repo": "github-action-transition-jira-ticket",
+  "owner": "erodewald",
+  "repo": "github-action-jira-transition-manager",
   "title_prefix": "GitHub Action: ",
   "pretty": "true"
 }

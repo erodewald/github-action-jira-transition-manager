@@ -42,6 +42,7 @@ export default class Issue {
     await this.getJiraIssueObject()
     this.beforeStatus = await this.getStatus()
     this.toStatus = this.transitionEventManager.githubEventToState(this.projectName)
+    core.debug(`Transitioning ${this.issue} from ${this.beforeStatus} to ${this.toStatus}`)
 
     this.issueTransitions = await this.getTransitions()
     if (this.issueTransitions) {
@@ -139,6 +140,7 @@ export default class Issue {
   }
 
   async getTransitions(): Promise<IssueTransition[] | undefined> {
+    core.debug(`Getting transitions for ${this.issue}`)
     const {transitions} = await this.jira.getIssueTransitions(this.issue)
 
     if (transitions == null) {
@@ -149,6 +151,7 @@ export default class Issue {
   }
 
   async getJiraIssueObject(): Promise<IssueBean> {
+    core.debug(`Fetching issue ${this.issue}`)
     this.issueObject = await this.jira.getIssue(this.issue)
     return this.issueObject
   }

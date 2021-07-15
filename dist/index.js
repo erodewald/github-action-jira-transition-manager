@@ -34,6 +34,7 @@ class Issue {
         await this.getJiraIssueObject();
         this.beforeStatus = await this.getStatus();
         this.toStatus = this.transitionEventManager.githubEventToState(this.projectName);
+        core.debug(`Transitioning ${this.issue} from ${this.beforeStatus} to ${this.toStatus}`);
         this.issueTransitions = await this.getTransitions();
         if (this.issueTransitions) {
             for (const transition of this.issueTransitions) {
@@ -126,6 +127,7 @@ class Issue {
         this.issue = issue;
     }
     async getTransitions() {
+        core.debug(`Getting transitions for ${this.issue}`);
         const { transitions } = await this.jira.getIssueTransitions(this.issue);
         if (transitions == null) {
             core.warning('No transitions found for issue');
@@ -135,6 +137,7 @@ class Issue {
         return transitions;
     }
     async getJiraIssueObject() {
+        core.debug(`Fetching issue ${this.issue}`);
         this.issueObject = await this.jira.getIssue(this.issue);
         return this.issueObject;
     }
@@ -219,15 +222,19 @@ function objEquals(v1, v2) {
 }
 exports.objEquals = objEquals;
 function checkConditions(a, b) {
+    core.debug(`Available condition keys: ${Object.keys(b)}`);
+    let conditions = new Map();
     for (const k of Object.keys(b)) {
+        core.debug(`Checking condition: ${a[k]} against ${b[k]}`);
+        core.debug(`isObject(a[${k}]): ${exports.isObject(a[k])}, isObject(b[${k}]): ${exports.isObject(b[k])}`);
         if (exports.isObject(a[k]) && exports.isObject(b[k]) ? checkConditions(a[k], b[k]) : objEquals(a[k], b[k])) {
-            return true;
+            conditions.set(k, true);
         }
         else {
-            return false;
+            conditions.set(k, false);
         }
     }
-    return false;
+    return Array.from(conditions).every(condition => condition[1] === true);
 }
 exports.checkConditions = checkConditions;
 const yamlConfigPath = '.github/github_event_jira_transitions.';
@@ -254,6 +261,7 @@ class TransitionEventManager {
             throw new Error(`No GitHub event configuration found as an input or as yml file in ${yamlConfigPath}`);
         }
         const yObj = YAML.parse(yml);
+        core.debug(`YAML: ${yml}`);
         if (!Object.prototype.hasOwnProperty.call(yObj, 'projects')) {
             const estring = `The YAML config file doesn't have a 'projects' key`;
             if (this.failOnError) {
@@ -334,6 +342,7 @@ class Action {
         let successes = 0;
         let failures = 0;
         for (const issueId of issueList) {
+            core.debug(`Processing issue ${issueId}`);
             const issue = await new Issue_1.default(issueId.trim(), this.jira, this.argv, this.githubEvent).build();
             issuesList.push(issue);
             try {

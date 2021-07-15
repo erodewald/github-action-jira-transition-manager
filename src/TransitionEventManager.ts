@@ -19,14 +19,18 @@ export function objEquals(v1: any, v2: any): boolean {
 }
 
 export function checkConditions(a: any, b: any): boolean {
+  core.debug(`Available condition keys: ${Object.keys(b)}`)
+  let conditions = new Map<string, boolean>()
   for (const k of Object.keys(b)) {
+    core.debug(`Checking condition: ${a[k]} against ${b[k]}`)
+    core.debug(`isObject(a[${k}]): ${isObject(a[k])}, isObject(b[${k}]): ${isObject(b[k])}`)
     if (isObject(a[k]) && isObject(b[k]) ? checkConditions(a[k], b[k]) : objEquals(a[k], b[k])) {
-      return true
+      conditions.set(k, true)
     } else {
-      return false
+      conditions.set(k, false)
     }
   }
-  return false
+  return Array.from(conditions).every(condition => condition[1] === true)
 }
 
 export type GitHubEventConditions = {
@@ -82,6 +86,7 @@ export default class TransitionEventManager {
     }
 
     const yObj = YAML.parse(yml)
+    core.debug(`YAML: ${yml}`)
 
     if (!Object.prototype.hasOwnProperty.call(yObj, 'projects')) {
       const estring = `The YAML config file doesn't have a 'projects' key`

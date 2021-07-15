@@ -10,51 +10,35 @@ import * as inputHelper from '../src/input-helper'
 const originalGitHubWorkspace = process.env.GITHUB_WORKSPACE
 const gitHubWorkspace = path.resolve('/checkout-tests/workspace')
 
-export const issues = 'DVPS-336,DVPS-339'
+export const issues = 'DAX-1101,DAX-1098'
 export const jira_transitions_yaml = `
 projects:
-  UNICORN:
+  DAX:
     ignored_states:
-      - 'done'
-      - 'testing'
+      - 'Blocked'
+      - 'Done'
     to_state:
-      'solution review':
-        - eventName: create
-      'code review':
-        - eventName: pull_request
-          action: 'opened'
-        - eventName: pull_request
-          action: 'synchronized'
-      'testing':
-        - eventName: pull_request
-          payload:
-            merged: true
-          action: 'closed'
-        - eventName: pull_request_review
-          payload:
-            state: 'APPROVED'
-  DVPS:
-    ignored_states:
-      - 'done'
-      - 'testing'
-    to_state:
-      'On Hold':
-        - eventName: start_test
       'In Progress':
         - eventName: create
+        - eventName: pull_request_review
+          payload:
+            review:
+              state: changes_requested
       'Code Review':
         - eventName: pull_request
           action: 'opened'
         - eventName: pull_request
           action: 'synchronized'
-      'testing':
+      'Code Approved':
+        - eventName: pull_request_review
+          payload:
+            review:
+              state: approved
+      'Testing':
         - eventName: pull_request
           payload:
             merged: true
-          action: 'closed'
-        - eventName: pull_request_review
-          payload:
-            state: 'APPROVED'
+          action: closed
 `
 export const baseUrl = process.env.JIRA_BASE_URL as string
 // Inputs for mock @actions/core
@@ -114,81 +98,103 @@ describe('jira ticket transition', () => {
     jest.restoreAllMocks()
   })
 
-  it('sets defaults', () => {
-    jest.setTimeout(50000)
-    const settings: Args = inputHelper.getInputs()
-    expect(settings).toBeTruthy()
-    expect(settings.issues).toEqual(issues)
-    expect(settings.config).toBeTruthy()
-    expect(settings.config.baseUrl).toEqual(baseUrl)
-  })
+  // it('sets defaults', () => {
+  //   jest.setTimeout(50000)
+  //   const settings: Args = inputHelper.getInputs()
+  //   expect(settings).toBeTruthy()
+  //   expect(settings.issues).toEqual(issues)
+  //   expect(settings.config).toBeTruthy()
+  //   expect(settings.config.baseUrl).toEqual(baseUrl)
+  // })
 
-  it('get transitions', async () => {
-    jest.setTimeout(50000)
-    // expect.hasAssertions()
-    github.context.eventName = 'push'
-    const settings: Args = inputHelper.getInputs()
-    const action = new Action(github.context, settings)
-    const result = await action.execute()
-    expect(result).toEqual(true)
-  })
+  // it('get transitions', async () => {
+  //   jest.setTimeout(50000)
+  //   // expect.hasAssertions()
+  //   github.context.eventName = 'push'
+  //   const settings: Args = inputHelper.getInputs()
+  //   const action = new Action(github.context, settings)
+  //   const result = await action.execute()
+  //   expect(result).toEqual(true)
+  // })
 
-  it('GitHub Event: start_test', async () => {
-    jest.setTimeout(50000)
-    // expect.hasAssertions()
-    github.context.eventName = 'start_test'
-    const settings: Args = inputHelper.getInputs()
-    const action = new Action(github.context, settings)
-    const result = await action.execute()
-    expect(result).toEqual(true)
-  })
+  // it('GitHub Event: start_test', async () => {
+  //   jest.setTimeout(50000)
+  //   // expect.hasAssertions()
+  //   github.context.eventName = 'start_test'
+  //   const settings: Args = inputHelper.getInputs()
+  //   const action = new Action(github.context, settings)
+  //   const result = await action.execute()
+  //   expect(result).toEqual(true)
+  // })
 
-  it('GitHub Event: create', async () => {
-    jest.setTimeout(50000)
-    // expect.hasAssertions()
-    github.context.eventName = 'create'
-    const settings: Args = inputHelper.getInputs()
-    const action = new Action(github.context, settings)
-    const result = await action.execute()
-    expect(result).toEqual(true)
-  })
+  // it('GitHub Event: create', async () => {
+  //   jest.setTimeout(50000)
+  //   // expect.hasAssertions()
+  //   github.context.eventName = 'create'
+  //   const settings: Args = inputHelper.getInputs()
+  //   const action = new Action(github.context, settings)
+  //   const result = await action.execute()
+  //   expect(result).toEqual(true)
+  // })
 
-  it('GitHub Event: pull_request, Github Action: opened', async () => {
-    jest.setTimeout(50000)
-    // expect.hasAssertions()
-    github.context.eventName = 'pull_request'
-    github.context.action = 'opened'
-    const settings: Args = inputHelper.getInputs()
-    const action = new Action(github.context, settings)
-    const result = await action.execute()
-    expect(result).toEqual(true)
-  })
-  it('GitHub Event: pull_request, Github Action: synchronized', async () => {
-    jest.setTimeout(50000)
-    // expect.hasAssertions()
-    github.context.eventName = 'pull_request'
-    github.context.action = 'synchronized'
-    const settings: Args = inputHelper.getInputs()
-    const action = new Action(github.context, settings)
-    const result = await action.execute()
-    expect(result).toEqual(true)
-  })
-  it('GitHub Event: pull_request, Github Action: closed, GitHub Payload: merged', async () => {
-    jest.setTimeout(50000)
-    // expect.hasAssertions()
-    github.context.eventName = 'pull_request'
-    github.context.action = 'closed'
-    github.context.payload.merged = true
-    const settings: Args = inputHelper.getInputs()
-    const action = new Action(github.context, settings)
-    const result = await action.execute()
-    expect(result).toEqual(true)
-  })
-  it('GitHub Event: pull_request_review, Github State: APPROVED', async () => {
+  // it('GitHub Event: pull_request, Github Action: opened', async () => {
+  //   jest.setTimeout(50000)
+  //   // expect.hasAssertions()
+  //   github.context.eventName = 'pull_request'
+  //   github.context.action = 'opened'
+  //   const settings: Args = inputHelper.getInputs()
+  //   const action = new Action(github.context, settings)
+  //   const result = await action.execute()
+  //   expect(result).toEqual(true)
+  // })
+  // it('GitHub Event: pull_request, Github Action: synchronized', async () => {
+  //   jest.setTimeout(50000)
+  //   // expect.hasAssertions()
+  //   github.context.eventName = 'pull_request'
+  //   github.context.action = 'synchronized'
+  //   const settings: Args = inputHelper.getInputs()
+  //   const action = new Action(github.context, settings)
+  //   const result = await action.execute()
+  //   expect(result).toEqual(true)
+  // })
+  // it('GitHub Event: pull_request, Github Action: closed, GitHub Payload: merged', async () => {
+  //   jest.setTimeout(50000)
+  //   // expect.hasAssertions()
+  //   github.context.eventName = 'pull_request'
+  //   github.context.action = 'closed'
+  //   github.context.payload.merged = true
+  //   const settings: Args = inputHelper.getInputs()
+  //   const action = new Action(github.context, settings)
+  //   const result = await action.execute()
+  //   expect(result).toEqual(true)
+  // })
+  // it('GitHub Event: pull_request_review, Github State: APPROVED', async () => {
+  //   jest.setTimeout(50000)
+  //   // expect.hasAssertions()
+  //   github.context.eventName = 'pull_request_review'
+  //   github.context.payload.state = 'APPROVED'
+  //   const settings: Args = inputHelper.getInputs()
+  //   const action = new Action(github.context, settings)
+  //   const result = await action.execute()
+  //   expect(result).toEqual(true)
+  // })
+  it('GitHub Event: pull_request_review, Github State: changes_requested', async () => {
     jest.setTimeout(50000)
     // expect.hasAssertions()
     github.context.eventName = 'pull_request_review'
-    github.context.payload.state = 'APPROVED'
+    github.context.payload.review = {}
+    github.context.payload.review.state = 'changes_requested'
+    const settings: Args = inputHelper.getInputs()
+    const action = new Action(github.context, settings)
+    const result = await action.execute()
+    expect(result).toEqual(true)
+  })
+  it('GitHub Event: pull_request_review, Github State: approved', async () => {
+    jest.setTimeout(50000)
+    // expect.hasAssertions()
+    github.context.eventName = 'pull_request_review'
+    github.context.payload.review = {}
+    github.context.payload.review.state = 'approved'
     const settings: Args = inputHelper.getInputs()
     const action = new Action(github.context, settings)
     const result = await action.execute()
