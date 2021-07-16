@@ -34,7 +34,7 @@ class Issue {
         await this.getJiraIssueObject();
         this.beforeStatus = await this.getStatus();
         this.toStatus = this.transitionEventManager.githubEventToState(this.projectName);
-        core.debug(`Transitioning ${this.issue} from ${this.beforeStatus} to ${this.toStatus}`);
+        core.debug(`Transition ${this.issue} from ${this.beforeStatus} to ${this.toStatus}`);
         this.issueTransitions = await this.getTransitions();
         if (this.issueTransitions) {
             for (const transition of this.issueTransitions) {
