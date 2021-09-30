@@ -49,7 +49,12 @@ export class Action {
     async function getOutputs(): Promise<IssueOutput[]> {
       return Promise.all(issuesList.map(async i => await i.getOutputs()))
     }
-    core.setOutput('issueOutputs', JSON.stringify(await getOutputs()))
+    let stringifiedOutputs = JSON.stringify(await getOutputs())
+    if (stringifiedOutputs !== undefined) {
+      /* eslint-disable no-useless-escape */
+      stringifiedOutputs = stringifiedOutputs.replace(/[\/\(\)\']/g, "\'")
+    }
+    core.setOutput('issueOutputs', stringifiedOutputs)
 
     return failures === 0 && issueList.length === successes
   }
