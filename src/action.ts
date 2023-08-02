@@ -52,7 +52,7 @@ export class Action {
     let stringifiedOutputs = JSON.stringify(await getOutputs())
     if (stringifiedOutputs !== undefined) {
       /* eslint-disable no-useless-escape */
-      stringifiedOutputs = stringifiedOutputs.replace(/[\/\(\)\']/g, "\'")
+      stringifiedOutputs = stringifiedOutputs.replace(/[\/\(\)\']/g, "'")
     }
     core.setOutput('issueOutputs', stringifiedOutputs)
 

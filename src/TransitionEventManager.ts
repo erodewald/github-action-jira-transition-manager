@@ -1,21 +1,28 @@
 /* eslint-disable @typescript-eslint/prefer-for-of */
 /* eslint-disable security/detect-object-injection */
 import * as core from '@actions/core'
-import {Context} from '@actions/github/lib/context'
+import { Context } from '@actions/github/lib/context'
 import * as fs from 'fs'
 import * as YAML from 'yaml'
 
-import {Args} from './@types'
-import {fileExistsSync} from './fs-helper'
+import { Args } from './@types'
+import { fileExistsSync } from './fs-helper'
 import Jira from './Jira'
 
 export const isObject = (v: any): boolean => {
   return v && typeof v === 'object'
 }
 
+export function isRegexMatch(v1: any, v2: any): boolean {
+  const regex = new RegExp(JSON.stringify(v2))
+  const str = JSON.stringify(v1)
+  core.debug(`new RegExp(${JSON.stringify(v2)}}).test(${JSON.stringify(v1)}) (${regex.test(str)})`)
+  return regex.test(str)
+}
+
 export function objEquals(v1: any, v2: any): boolean {
   core.debug(`Comparing a:${JSON.stringify(v1)} to b:${JSON.stringify(v2)} (${v1 === v2})`)
-  return v1 === v2
+  return v1 === v2 || isRegexMatch(v1, v2)
 }
 
 export function checkConditions(a: any, b: any): boolean {

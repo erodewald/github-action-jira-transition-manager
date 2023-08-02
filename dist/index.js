@@ -206,7 +206,7 @@ exports.default = Jira;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.checkConditions = exports.objEquals = exports.isObject = void 0;
+exports.checkConditions = exports.objEquals = exports.isRegexMatch = exports.isObject = void 0;
 const tslib_1 = __nccwpck_require__(4351);
 const core = tslib_1.__importStar(__nccwpck_require__(42186));
 const fs = tslib_1.__importStar(__nccwpck_require__(35747));
@@ -216,9 +216,16 @@ const isObject = (v) => {
     return v && typeof v === 'object';
 };
 exports.isObject = isObject;
+function isRegexMatch(v1, v2) {
+    const regex = new RegExp(JSON.stringify(v2));
+    const str = JSON.stringify(v1);
+    core.debug(`new RegExp(${JSON.stringify(v2)}}).test(${JSON.stringify(v1)}) (${regex.test(str)})`);
+    return regex.test(str);
+}
+exports.isRegexMatch = isRegexMatch;
 function objEquals(v1, v2) {
     core.debug(`Comparing a:${JSON.stringify(v1)} to b:${JSON.stringify(v2)} (${v1 === v2})`);
-    return v1 === v2;
+    return v1 === v2 || isRegexMatch(v1, v2);
 }
 exports.objEquals = objEquals;
 function checkConditions(a, b) {
@@ -364,7 +371,7 @@ class Action {
         }
         let stringifiedOutputs = JSON.stringify(await getOutputs());
         if (stringifiedOutputs !== undefined) {
-            stringifiedOutputs = stringifiedOutputs.replace(/[\/\(\)\']/g, "\'");
+            stringifiedOutputs = stringifiedOutputs.replace(/[\/\(\)\']/g, "'");
         }
         core.setOutput('issueOutputs', stringifiedOutputs);
         return failures === 0 && issueList.length === successes;

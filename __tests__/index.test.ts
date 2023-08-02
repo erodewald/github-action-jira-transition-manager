@@ -2,8 +2,8 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import * as path from 'path'
 
-import {Args} from '../src/@types'
-import {Action} from '../src/action'
+import { Args } from '../src/@types'
+import { Action } from '../src/action'
 import * as fsHelper from '../src/fs-helper'
 import * as inputHelper from '../src/input-helper'
 
@@ -20,15 +20,19 @@ projects:
     to_state:
       'In Progress':
         - eventName: create
+          payload:
+            ref_type: branch
         - eventName: pull_request_review
           payload:
             review:
               state: changes_requested
       'Code Review':
         - eventName: pull_request
-          action: 'opened'
+          payload:
+            action: opened
         - eventName: pull_request
-          action: 'synchronized'
+          payload:
+            action: synchronize
       'Code Approved':
         - eventName: pull_request_review
           payload:
@@ -37,14 +41,24 @@ projects:
       'Testing':
         - eventName: pull_request
           payload:
-            merged: true
-          action: closed
+            action: closed
+            pull_request:
+              merged: true
+      'Done':
+        - eventName: push
+          payload:
+            ref: 'refs/tags/v*'
+            created: true
+            deleted: false
+        - eventName: create
+          payload:
+            ref_type: tag
 `
 export const baseUrl = process.env.JIRA_BASE_URL as string
 // Inputs for mock @actions/core
 let inputs = {} as any
 // Shallow clone original @actions/github context
-const originalContext = {...github.context}
+const originalContext = { ...github.context }
 
 describe('jira ticket transition', () => {
   beforeAll(() => {
@@ -195,6 +209,18 @@ describe('jira ticket transition', () => {
     github.context.eventName = 'pull_request_review'
     github.context.payload.review = {}
     github.context.payload.review.state = 'approved'
+    const settings: Args = inputHelper.getInputs()
+    const action = new Action(github.context, settings)
+    const result = await action.execute()
+    expect(result).toEqual(true)
+  })
+  it('GitHub Event: push, Github Payload ref: ref/tags/*', async () => {
+    jest.setTimeout(50000)
+    // expect.hasAssertions()
+    github.context.eventName = 'push'
+    github.context.payload.ref = 'refs/tags/v0.36.0'
+    github.context.payload.created = true
+    github.context.payload.deleted = false
     const settings: Args = inputHelper.getInputs()
     const action = new Action(github.context, settings)
     const result = await action.execute()
